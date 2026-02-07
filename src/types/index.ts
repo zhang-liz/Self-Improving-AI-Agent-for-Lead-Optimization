@@ -4,7 +4,7 @@ export interface Lead {
   email: string;
   company: string;
   position: string;
-  vibeScore: number;
+  engagementScore: number;
   previousScore?: number;
   trend: 'up' | 'down' | 'stable';
   lastInteraction: Date;
@@ -31,7 +31,7 @@ export interface Interaction {
   };
 }
 
-export interface VibeScore {
+export interface LeadScore {
   current: number;
   previous: number;
   change: number;
@@ -54,7 +54,7 @@ export interface ScoreHistory {
 
 export interface TeamMetrics {
   totalLeads: number;
-  averageVibeScore: number;
+  averageEngagementScore: number;
   highQualityLeads: number;
   scoreImprovement: number;
   interactionsToday: number;
@@ -68,4 +68,16 @@ export interface FilterOptions {
   sources: string[];
   dateRange: [Date, Date] | null;
   trend: string[];
+}
+
+export interface RecommendationSuggestion {
+  leadId: string;
+  action: string;
+  reason: string;
+}
+
+export interface Recommendations {
+  prioritizedLeadIds: string[];
+  suggestions: RecommendationSuggestion[];
+  summary?: string;
 }
