@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Lead, Interaction } from '../types';
+import type { Lead } from '../types';
 import VibeScoreGauge from './VibeScoreGauge';
 import InteractionTimeline from './InteractionTimeline';
 import ScoreHistoryChart from './ScoreHistoryChart';
-import { ArrowLeft, Building, Mail, Phone, Calendar, ExternalLink, MessageCircle, Edit } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Calendar, ExternalLink, MessageCircle } from 'lucide-react';
 import { mockInteractions, generateScoreHistory } from '../data/mockData';
 
 interface LeadProfileProps {
@@ -38,7 +38,7 @@ export default function LeadProfile({ lead, onBack }: LeadProfileProps) {
     { id: 'overview', label: 'Overview' },
     { id: 'interactions', label: 'Interactions' },
     { id: 'history', label: 'Score History' }
-  ];
+  ] as const;
 
   return (
     <div className="space-y-6">

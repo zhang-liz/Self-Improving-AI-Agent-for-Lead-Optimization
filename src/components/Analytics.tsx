@@ -1,7 +1,7 @@
 import React from 'react';
 import { mockTeamMetrics, mockLeads } from '../data/mockData';
 import MetricsCards from './MetricsCards';
-import { BarChart3, TrendingUp, Users, Target, Activity, Calendar } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Target, Activity } from 'lucide-react';
 
 export default function Analytics() {
   // Calculate additional analytics

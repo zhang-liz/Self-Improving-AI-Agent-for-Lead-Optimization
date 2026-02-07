@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Database, Zap, Bell, Shield, Download, Upload, ExternalLink } from 'lucide-react';
+import { Database, Zap, Bell, Shield, Download, Upload, ExternalLink } from 'lucide-react';
 
 export default function Settings() {
   const [hubspotConnected, setHubspotConnected] = useState(false);

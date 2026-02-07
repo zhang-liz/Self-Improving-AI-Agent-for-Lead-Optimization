@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Lead, FilterOptions } from '../types';
+import type { Lead, FilterOptions } from '../types';
 import LeadCard from './LeadCard';
 import DashboardFilters from './DashboardFilters';
 import MetricsCards from './MetricsCards';

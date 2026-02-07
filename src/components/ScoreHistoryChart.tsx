@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ScoreHistory } from '../types';
+import type { ScoreHistory } from '../types';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface ScoreHistoryChartProps {

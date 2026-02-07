@@ -1,5 +1,5 @@
 import React from 'react';
-import { Interaction } from '../types';
+import type { Interaction } from '../types';
 import { Mail, MessageCircle, Phone, HelpCircle, ExternalLink } from 'lucide-react';
 
 interface InteractionTimelineProps {

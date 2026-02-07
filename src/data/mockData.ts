@@ -1,4 +1,4 @@
-import { Lead, Interaction, ScoreHistory, TeamMetrics } from '../types';
+import type { Lead, Interaction, ScoreHistory, TeamMetrics } from '../types';
 import { calculateVibeScore, getScoreTrend } from '../utils/sentimentAnalysis';
 
 // Mock interaction data
@@ -104,7 +104,7 @@ function generateMockLeads(): Lead[] {
 }
 
 // Generate score history for trends
-function generateScoreHistory(leadId: string): ScoreHistory[] {
+function generateScoreHistory(_leadId: string): ScoreHistory[] {
   const history: ScoreHistory[] = [];
   const days = 30;
   let currentScore = 50 + (Math.random() - 0.5) * 40;

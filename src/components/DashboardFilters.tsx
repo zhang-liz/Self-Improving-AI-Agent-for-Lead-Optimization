@@ -1,5 +1,5 @@
-import React from 'react';
-import { Lead, FilterOptions } from '../types';
+import { useState } from 'react';
+import type { Lead, FilterOptions } from '../types';
 import { Filter, X } from 'lucide-react';
 
 interface DashboardFiltersProps {
@@ -9,7 +9,7 @@ interface DashboardFiltersProps {
 }
 
 export default function DashboardFilters({ filters, onFiltersChange, leads }: DashboardFiltersProps) {
-  const [showFilters, setShowFilters] = React.useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const allStages = Array.from(new Set(leads.map(lead => lead.stage)));
   const allSources = Array.from(new Set(leads.map(lead => lead.source)));

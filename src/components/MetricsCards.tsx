@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TeamMetrics } from '../types';
+import type { TeamMetrics } from '../types';
 import { Users, TrendingUp, Target, Activity, Zap, BarChart3 } from 'lucide-react';
 
 interface AnimatedNumberProps {

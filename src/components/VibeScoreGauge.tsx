@@ -1,4 +1,3 @@
-import React from 'react';
 import React, { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
