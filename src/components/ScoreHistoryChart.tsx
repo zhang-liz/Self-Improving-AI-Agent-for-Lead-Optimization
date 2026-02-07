@@ -175,7 +175,7 @@ export default function ScoreHistoryChart({ history }: ScoreHistoryChartProps) {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-              <span>Vibe Score</span>
+              <span>Lead Score</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>

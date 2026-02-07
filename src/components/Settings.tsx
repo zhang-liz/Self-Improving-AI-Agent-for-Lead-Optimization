@@ -1,7 +1,29 @@
-import React, { useState } from 'react';
-import { Database, Zap, Bell, Shield, Download, Upload, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Database, Zap, Bell, Shield, Download, Upload, ExternalLink, RefreshCw } from 'lucide-react';
+import { runImprove } from '../services/agentService';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function Settings() {
+  const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  const [improveRunning, setImproveRunning] = useState(false);
+  const [improveMessage, setImproveMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/health`)
+      .then(res => res.ok)
+      .then(setBackendConnected)
+      .catch(() => setBackendConnected(false));
+  }, []);
+
+  const handleRunImprove = async () => {
+    setImproveRunning(true);
+    setImproveMessage(null);
+    const result = await runImprove();
+    setImproveMessage(result.success ? (result.message ?? 'Done') : 'Failed');
+    setImproveRunning(false);
+  };
+
   const [hubspotConnected, setHubspotConnected] = useState(false);
   const [notifications, setNotifications] = useState({
     scoreAlerts: true,
@@ -21,7 +43,7 @@ export default function Settings() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
-        <p className="text-gray-400">Configure your Vibe Check Lead Scorer preferences</p>
+        <p className="text-gray-400">Configure your Lead Score Dashboard preferences</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -70,7 +92,7 @@ export default function Settings() {
             )}
 
             <div className="text-sm text-gray-400">
-              Connect your HubSpot account to automatically sync lead data and push vibe scores back to your CRM.
+              Connect your HubSpot account to automatically sync lead data and push lead scores back to your CRM.
             </div>
 
             <button className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
@@ -116,11 +138,27 @@ export default function Settings() {
             </div>
 
             <div className="bg-gray-700 p-3 rounded-lg">
-              <div className="text-sm font-medium text-white mb-1">API Usage Today</div>
-              <div className="text-2xl font-bold text-blue-400">2,847 / 10,000</div>
-              <div className="w-full bg-gray-600 rounded-full h-1 mt-2">
-                <div className="bg-blue-400 h-1 rounded-full" style={{ width: '28.47%' }}></div>
+              <div className="text-sm font-medium text-white mb-1">Backend</div>
+              <div className={`text-lg font-semibold ${backendConnected === true ? 'text-green-400' : backendConnected === false ? 'text-red-400' : 'text-gray-400'}`}>
+                {backendConnected === null ? 'Checking…' : backendConnected ? 'Connected' : 'Disconnected'}
               </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {backendConnected ? 'Recommendations and feedback are active.' : 'Start the server with npm run server to enable AI recommendations.'}
+              </div>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleRunImprove}
+                disabled={!backendConnected || improveRunning}
+                className="flex items-center gap-2 px-3 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:pointer-events-none text-white rounded-lg text-sm font-medium"
+              >
+                <RefreshCw className={`w-4 h-4 ${improveRunning ? 'animate-spin' : ''}`} />
+                Run agent improvement
+              </button>
+              {improveMessage && (
+                <p className="text-sm text-gray-400 mt-2">{improveMessage}</p>
+              )}
             </div>
           </div>
         </div>
@@ -234,7 +272,7 @@ export default function Settings() {
         </div>
 
         <div className="mt-4 text-sm text-gray-400">
-          Export your lead data and vibe scores in CSV format, or bulk import new leads from your existing systems.
+          Export your lead data and lead scores in CSV format, or bulk import new leads from your existing systems.
         </div>
       </div>
     </div>

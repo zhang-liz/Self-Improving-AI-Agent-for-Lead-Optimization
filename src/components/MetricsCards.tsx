@@ -51,8 +51,8 @@ export default function MetricsCards({ metrics }: MetricsCardsProps) {
       borderColor: 'border-blue-500/30'
     },
     {
-      title: 'Average Vibe Score',
-      value: metrics.averageVibeScore,
+      title: 'Average Lead Score',
+      value: metrics.averageEngagementScore,
       icon: BarChart3,
       color: 'text-green-400',
       bgColor: 'bg-green-900/20',

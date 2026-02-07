@@ -81,7 +81,7 @@ export function analyzeSentiment(text: string): SentimentResult {
   };
 }
 
-export function calculateVibeScore(interactions: Array<{ content: string; timestamp: Date; type: string }>): number {
+export function calculateEngagementScore(interactions: Array<{ content: string; timestamp: Date; type: string }>): number {
   if (interactions.length === 0) return 50;
 
   let totalScore = 0;

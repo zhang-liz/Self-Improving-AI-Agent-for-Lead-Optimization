@@ -4,23 +4,32 @@ import Dashboard from './components/Dashboard';
 import Analytics from './components/Analytics';
 import Settings from './components/Settings';
 import LeadProfile from './components/LeadProfile';
-import type { Lead } from './types';
+import type { Lead, RecommendationSuggestion } from './types';
 
 function App() {
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<RecommendationSuggestion | null>(null);
 
-  const handleLeadSelect = (lead: Lead) => {
+  const handleLeadSelect = (lead: Lead, suggestion?: RecommendationSuggestion) => {
     setSelectedLead(lead);
+    setSelectedSuggestion(suggestion ?? null);
   };
 
   const handleBackToDashboard = () => {
     setSelectedLead(null);
+    setSelectedSuggestion(null);
   };
 
   const renderMainContent = () => {
     if (selectedLead) {
-      return <LeadProfile lead={selectedLead} onBack={handleBackToDashboard} />;
+      return (
+        <LeadProfile
+          lead={selectedLead}
+          onBack={handleBackToDashboard}
+          suggestion={selectedSuggestion}
+        />
+      );
     }
 
     switch (activeView) {

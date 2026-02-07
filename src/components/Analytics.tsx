@@ -6,10 +6,10 @@ import { BarChart3, TrendingUp, Users, Target, Activity } from 'lucide-react';
 export default function Analytics() {
   // Calculate additional analytics
   const scoreDistribution = {
-    'Excellent (80-100)': mockLeads.filter(l => l.vibeScore >= 80).length,
-    'Good (60-79)': mockLeads.filter(l => l.vibeScore >= 60 && l.vibeScore < 80).length,
-    'Average (40-59)': mockLeads.filter(l => l.vibeScore >= 40 && l.vibeScore < 60).length,
-    'Poor (0-39)': mockLeads.filter(l => l.vibeScore < 40).length,
+    'Excellent (80-100)': mockLeads.filter(l => l.engagementScore >= 80).length,
+    'Good (60-79)': mockLeads.filter(l => l.engagementScore >= 60 && l.engagementScore < 80).length,
+    'Average (40-59)': mockLeads.filter(l => l.engagementScore >= 40 && l.engagementScore < 60).length,
+    'Poor (0-39)': mockLeads.filter(l => l.engagementScore < 40).length,
   };
 
   const stageDistribution = mockLeads.reduce((acc, lead) => {
@@ -144,7 +144,7 @@ export default function Analytics() {
                 <span className="text-green-400 font-medium">Strong Performance</span>
               </div>
               <p className="text-sm text-gray-300">
-                {mockLeads.filter(l => l.vibeScore >= 80).length} leads have excellent vibe scores (80+)
+                {mockLeads.filter(l => l.engagementScore >= 80).length} leads have excellent lead scores (80+)
               </p>
             </div>
 
@@ -164,7 +164,7 @@ export default function Analytics() {
                 <span className="text-yellow-400 font-medium">Opportunity</span>
               </div>
               <p className="text-sm text-gray-300">
-                {mockLeads.filter(l => l.vibeScore < 60).length} leads could benefit from targeted engagement
+                {mockLeads.filter(l => l.engagementScore < 60).length} leads could benefit from targeted engagement
               </p>
             </div>
           </div>
@@ -181,13 +181,13 @@ export default function Analytics() {
           <div className="p-4 bg-blue-900/20 border border-blue-700 rounded-lg">
             <h4 className="font-medium text-blue-400 mb-2">Focus on High Scorers</h4>
             <p className="text-sm text-gray-300">
-              Prioritize follow-up with {mockLeads.filter(l => l.vibeScore >= 80).length} high-scoring leads for faster conversion
+              Prioritize follow-up with {mockLeads.filter(l => l.engagementScore >= 80).length} high-scoring leads for faster conversion
             </p>
           </div>
           <div className="p-4 bg-yellow-900/20 border border-yellow-700 rounded-lg">
             <h4 className="font-medium text-yellow-400 mb-2">Re-engage Cold Leads</h4>
             <p className="text-sm text-gray-300">
-              {mockLeads.filter(l => l.vibeScore < 40).length} leads need nurturing campaigns to improve sentiment
+              {mockLeads.filter(l => l.engagementScore < 40).length} leads need nurturing campaigns to improve sentiment
             </p>
           </div>
           <div className="p-4 bg-green-900/20 border border-green-700 rounded-lg">

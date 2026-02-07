@@ -73,7 +73,7 @@ export default function DashboardFilters({ filters, onFiltersChange, leads }: Da
           {/* Score Range */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Vibe Score Range: {filters.scoreRange[0]} - {filters.scoreRange[1]}
+              Lead Score Range: {filters.scoreRange[0]} - {filters.scoreRange[1]}
             </label>
             <div className="flex items-center gap-4">
               <input

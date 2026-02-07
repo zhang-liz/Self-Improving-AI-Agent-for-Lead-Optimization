@@ -1,17 +1,41 @@
-import React, { useState, useMemo } from 'react';
-import type { Lead, FilterOptions } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import type { Lead, FilterOptions, RecommendationSuggestion } from '../types';
 import LeadCard from './LeadCard';
 import DashboardFilters from './DashboardFilters';
 import MetricsCards from './MetricsCards';
 import { mockLeads, mockTeamMetrics } from '../data/mockData';
-import { Search } from 'lucide-react';
+import { getRecommendations, recordFeedback } from '../services/agentService';
+import { Search, ThumbsUp, ThumbsDown, Sparkles, RefreshCw } from 'lucide-react';
 
 interface DashboardProps {
-  onLeadSelect: (lead: Lead) => void;
+  onLeadSelect: (lead: Lead, suggestion?: RecommendationSuggestion) => void;
 }
 
 export default function Dashboard({ onLeadSelect }: DashboardProps) {
   const [leads] = useState<Lead[]>(mockLeads);
+  const [recommendations, setRecommendations] = useState<{ prioritizedLeadIds: string[]; suggestions: RecommendationSuggestion[]; summary?: string } | null>(null);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [recommendationsOpen, setRecommendationsOpen] = useState(true);
+
+  const suggestionByLead = useMemo(() => {
+    const m: Record<string, RecommendationSuggestion> = {};
+    recommendations?.suggestions?.forEach(s => { m[s.leadId] = s; });
+    return m;
+  }, [recommendations]);
+
+  const fetchRecommendations = async () => {
+    setRecommendationsLoading(true);
+    const result = await getRecommendations(leads, mockTeamMetrics);
+    setRecommendations(result ?? null);
+    setRecommendationsLoading(false);
+  };
+
+  useEffect(() => { fetchRecommendations(); }, []);
+
+  const handleFeedback = async (e: React.MouseEvent, leadId: string, helpful: boolean) => {
+    e.stopPropagation();
+    await recordFeedback(leadId, helpful ? 'helpful' : 'not_helpful');
+  };
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
     scoreRange: [0, 100],
@@ -20,13 +44,13 @@ export default function Dashboard({ onLeadSelect }: DashboardProps) {
     dateRange: null,
     trend: []
   });
-  const [sortBy, setSortBy] = useState<'vibeScore' | 'lastInteraction' | 'name'>('vibeScore');
+  const [sortBy, setSortBy] = useState<'engagementScore' | 'lastInteraction' | 'name'>('engagementScore');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Calculate lead temperature categories
-  const hotLeads = leads.filter(lead => lead.vibeScore >= 80);
-  const warmLeads = leads.filter(lead => lead.vibeScore >= 60 && lead.vibeScore < 80);
-  const coldLeads = leads.filter(lead => lead.vibeScore < 60);
+  const hotLeads = leads.filter(lead => lead.engagementScore >= 80);
+  const warmLeads = leads.filter(lead => lead.engagementScore >= 60 && lead.engagementScore < 80);
+  const coldLeads = leads.filter(lead => lead.engagementScore < 60);
 
   const [temperatureFilter, setTemperatureFilter] = useState<'all' | 'hot' | 'warm' | 'cold'>('all');
 
@@ -34,9 +58,9 @@ export default function Dashboard({ onLeadSelect }: DashboardProps) {
     const filtered = leads.filter(lead => {
       // Temperature filter
       if (temperatureFilter !== 'all') {
-        if (temperatureFilter === 'hot' && lead.vibeScore < 80) return false;
-        if (temperatureFilter === 'warm' && (lead.vibeScore < 60 || lead.vibeScore >= 80)) return false;
-        if (temperatureFilter === 'cold' && lead.vibeScore >= 60) return false;
+        if (temperatureFilter === 'hot' && lead.engagementScore < 80) return false;
+        if (temperatureFilter === 'warm' && (lead.engagementScore < 60 || lead.engagementScore >= 80)) return false;
+        if (temperatureFilter === 'cold' && lead.engagementScore >= 60) return false;
       }
 
       // Search filter
@@ -50,7 +74,7 @@ export default function Dashboard({ onLeadSelect }: DashboardProps) {
       }
 
       // Score range filter
-      if (lead.vibeScore < filters.scoreRange[0] || lead.vibeScore > filters.scoreRange[1]) {
+      if (lead.engagementScore < filters.scoreRange[0] || lead.engagementScore > filters.scoreRange[1]) {
         return false;
       }
 
@@ -77,9 +101,9 @@ export default function Dashboard({ onLeadSelect }: DashboardProps) {
       let aValue, bValue;
 
       switch (sortBy) {
-        case 'vibeScore':
-          aValue = a.vibeScore;
-          bValue = b.vibeScore;
+        case 'engagementScore':
+          aValue = a.engagementScore;
+          bValue = b.engagementScore;
           break;
         case 'lastInteraction':
           aValue = a.lastInteraction.getTime();
@@ -115,6 +139,88 @@ export default function Dashboard({ onLeadSelect }: DashboardProps) {
           <div className="text-2xl font-bold text-blue-400">{filteredAndSortedLeads.length}</div>
           <div className="text-sm text-gray-400">Active Leads</div>
         </div>
+      </div>
+
+      {/* AI Recommendations */}
+      <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setRecommendationsOpen(prev => !prev)}
+          className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-700/50 transition-colors"
+        >
+          <span className="flex items-center gap-2 text-white font-semibold">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+            AI Recommendations
+          </span>
+          <span className="text-gray-400 text-sm">
+            {recommendationsOpen ? 'Collapse' : 'Expand'}
+          </span>
+        </button>
+        {recommendationsOpen && (
+          <div className="border-t border-gray-700 p-4">
+            {recommendationsLoading ? (
+              <div className="text-gray-400 flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Loading recommendations...
+              </div>
+            ) : recommendations ? (
+              <div className="space-y-3">
+                {recommendations.summary && (
+                  <p className="text-gray-400 text-sm mb-3">{recommendations.summary}</p>
+                )}
+                <ul className="space-y-2">
+                  {recommendations.suggestions.map((s) => {
+                    const lead = leads.find(l => l.id === s.leadId);
+                    return (
+                      <li
+                        key={s.leadId}
+                        className="flex items-center justify-between gap-4 p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700"
+                      >
+                        <button
+                          type="button"
+                          className="flex-1 text-left min-w-0"
+                          onClick={() => lead && onLeadSelect(lead, s)}
+                        >
+                          <span className="font-medium text-white block truncate">{lead?.name ?? s.leadId}</span>
+                          <span className="text-sm text-gray-400">{s.action} – {s.reason}</span>
+                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => handleFeedback(e, s.leadId, true)}
+                            className="p-1.5 rounded text-gray-400 hover:text-green-400 hover:bg-gray-600"
+                            title="Helpful"
+                          >
+                            <ThumbsUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleFeedback(e, s.leadId, false)}
+                            className="p-1.5 rounded text-gray-400 hover:text-red-400 hover:bg-gray-600"
+                            title="Not helpful"
+                          >
+                            <ThumbsDown className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button
+                  type="button"
+                  onClick={fetchRecommendations}
+                  disabled={recommendationsLoading}
+                  className="mt-2 text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 flex items-center gap-1"
+                >
+                  <RefreshCw className={`w-4 h-4 ${recommendationsLoading ? 'animate-spin' : ''}`} />
+                  Refresh recommendations
+                </button>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">Start the backend server to see AI recommendations.</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Metrics Cards */}
@@ -184,10 +290,10 @@ export default function Dashboard({ onLeadSelect }: DashboardProps) {
         <div className="flex items-center gap-4">
           <select
             value={sortBy}
-            onChange={(e) => setSortBy((e.target.value as 'vibeScore' | 'lastInteraction' | 'name') || 'vibeScore')}
+            onChange={(e) => setSortBy((e.target.value as 'engagementScore' | 'lastInteraction' | 'name') || 'engagementScore')}
             className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
           >
-            <option value="vibeScore">Sort by Vibe Score</option>
+            <option value="engagementScore">Sort by Lead Score</option>
             <option value="lastInteraction">Sort by Last Interaction</option>
             <option value="name">Sort by Name</option>
           </select>
@@ -211,10 +317,10 @@ export default function Dashboard({ onLeadSelect }: DashboardProps) {
       {/* Leads Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAndSortedLeads.map(lead => (
-          <LeadCard 
-            key={lead.id} 
-            lead={lead} 
-            onClick={onLeadSelect}
+          <LeadCard
+            key={lead.id}
+            lead={lead}
+            onClick={() => onLeadSelect(lead, suggestionByLead[lead.id])}
           />
         ))}
       </div>
