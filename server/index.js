@@ -5,6 +5,7 @@ import { analyzeSentiment as keywordSentiment } from './sentimentKeyword.js';
 import { getConfig, getConfigHistory, applyPatch, rollback } from './agentConfig.js';
 import { addFeedback, getRecentFeedback } from './feedbackStore.js';
 import { getCached, setCached } from './recommendCache.js';
+import { getCached as getSentimentCached, setCached as setSentimentCached } from './sentimentCache.js';
 
 dotenv.config();
 
@@ -41,7 +42,10 @@ app.post('/api/sentiment', (req, res) => {
     if (typeof text !== 'string') {
       return res.status(400).json({ error: 'Missing or invalid text' });
     }
+    const cached = getSentimentCached(text);
+    if (cached) return res.json(cached);
     const result = keywordSentiment(text);
+    setSentimentCached(text, result);
     return res.json(result);
   } catch (err) {
     console.error('Sentiment error:', err);
