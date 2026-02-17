@@ -1,9 +1,15 @@
 import type { Lead, Interaction, ScoreHistory, TeamMetrics } from '../types';
 import { calculateEngagementScore, getScoreTrend } from '../utils/sentimentAnalysis';
+import { extractIntent } from '../utils/intentDetection';
 
-// Mock interaction data
+function enrichWithIntent(i: Omit<Interaction, 'intentSignals'>): Interaction {
+  const intentSignals = extractIntent(i.content, i.metadata?.subject);
+  return { ...i, intentSignals };
+}
+
+// Mock interaction data (enriched with intent signals)
 const sampleInteractions: Interaction[] = [
-  {
+  enrichWithIntent({
     id: '1',
     leadId: 'lead1',
     type: 'email',
@@ -13,8 +19,8 @@ const sampleInteractions: Interaction[] = [
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
     source: 'email',
     metadata: { subject: 'Re: Product Demo Follow-up' }
-  },
-  {
+  }),
+  enrichWithIntent({
     id: '2',
     leadId: 'lead1',
     type: 'chat',
@@ -23,8 +29,8 @@ const sampleInteractions: Interaction[] = [
     sentimentScore: 0.2,
     timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
     source: 'website_chat'
-  },
-  {
+  }),
+  enrichWithIntent({
     id: '3',
     leadId: 'lead2',
     type: 'email',
@@ -34,8 +40,8 @@ const sampleInteractions: Interaction[] = [
     timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
     source: 'email',
     metadata: { subject: 'Re: Pricing Inquiry' }
-  },
-  {
+  }),
+  enrichWithIntent({
     id: '4',
     leadId: 'lead3',
     type: 'support_ticket',
@@ -44,8 +50,8 @@ const sampleInteractions: Interaction[] = [
     sentimentScore: 0.7,
     timestamp: new Date(Date.now() - 30 * 60 * 1000),
     source: 'support_portal'
-  },
-  {
+  }),
+  enrichWithIntent({
     id: '5',
     leadId: 'lead4',
     type: 'email',
@@ -54,7 +60,7 @@ const sampleInteractions: Interaction[] = [
     sentimentScore: -0.1,
     timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
     source: 'email'
-  }
+  })
 ];
 
 // Generate mock leads with calculated engagement scores
@@ -85,6 +91,23 @@ function generateMockLeads(): Lead[] {
     })));
     const previousScore = currentScore + (Math.random() - 0.5) * 20;
 
+    // Aggregate intent signals from interactions
+    const byIntent = new Map<string, { intent: string; strength: 'high' | 'medium' | 'low'; count: number }>();
+    for (const int of leadInteractions) {
+      for (const s of int.intentSignals ?? []) {
+        const key = s.intent;
+        if (!byIntent.has(key)) byIntent.set(key, { ...s, count: 0 });
+        byIntent.get(key)!.count++;
+      }
+    }
+    const intentSignals = Array.from(byIntent.values()).sort((a, b) => b.count - a.count);
+    const hasHigh = intentSignals.some(s => s.strength === 'high');
+    const hasLow = intentSignals.some(s => s.strength === 'low');
+    let intentSummary = 'No clear intent signals';
+    if (hasHigh) intentSummary = 'Strong buying signals (demo, trial, or quote interest)';
+    else if (intentSignals.length > 0) intentSummary = `Interest in: ${intentSignals.slice(0, 3).map(s => s.intent.replace(/_/g, ' ')).join(', ')}`;
+    if (hasLow) intentSummary += '; some hesitation signals';
+
     return {
       id: `lead${i + 1}`,
       name: names[i % names.length],
@@ -98,7 +121,9 @@ function generateMockLeads(): Lead[] {
       totalInteractions: Math.floor(Math.random() * 15) + 1,
       stage: stages[Math.floor(Math.random() * stages.length)],
       source: sources[Math.floor(Math.random() * sources.length)],
-      hubspotId: `hs_${i + 1000}`
+      hubspotId: `hs_${i + 1000}`,
+      intentSignals: intentSignals.length > 0 ? intentSignals : undefined,
+      intentSummary: intentSignals.length > 0 ? intentSummary : undefined
     };
   });
 }
