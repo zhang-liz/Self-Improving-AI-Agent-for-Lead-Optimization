@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { analyzeSentiment as keywordSentiment } from './sentimentKeyword.js';
+import { analyzeSentimentLLM } from './sentimentLLM.js';
 import { getConfig, getConfigHistory, applyPatch, rollback } from './agentConfig.js';
 import { addFeedback, getRecentFeedback } from './feedbackStore.js';
 import { getCached, setCached } from './recommendCache.js';
@@ -37,7 +38,7 @@ app.get('/api/config', (_req, res) => {
   }
 });
 
-app.post('/api/sentiment', (req, res) => {
+app.post('/api/sentiment', async (req, res) => {
   try {
     const { text } = req.body || {};
     if (typeof text !== 'string') {
@@ -45,7 +46,19 @@ app.post('/api/sentiment', (req, res) => {
     }
     const cached = getSentimentCached(text);
     if (cached) return res.json(cached);
-    const result = keywordSentiment(text);
+
+    const useLLM = SENTIMENT_PROVIDER === 'llm' && process.env.OPENAI_API_KEY;
+    let result;
+    if (useLLM) {
+      try {
+        result = await analyzeSentimentLLM(text);
+      } catch (llmErr) {
+        console.warn('LLM sentiment failed, falling back to keyword:', llmErr.message);
+        result = keywordSentiment(text);
+      }
+    } else {
+      result = keywordSentiment(text);
+    }
     setSentimentCached(text, result);
     return res.json(result);
   } catch (err) {
