@@ -94,6 +94,25 @@ export default function InteractionTimeline({ interactions }: InteractionTimelin
                     {interaction.content}
                   </div>
 
+                  {/* Intent signals */}
+                  {interaction.intentSignals && interaction.intentSignals.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {interaction.intentSignals.map((s, idx) => (
+                        <span
+                          key={idx}
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            s.strength === 'high' ? 'bg-green-900/30 text-green-400 border border-green-700/50' :
+                            s.strength === 'low' ? 'bg-amber-900/30 text-amber-400 border border-amber-700/50' :
+                            'bg-blue-900/30 text-blue-400 border border-blue-700/50'
+                          }`}
+                          title={`${s.intent} (${s.strength})`}
+                        >
+                          {s.intent.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Source */}
                   <div className="mt-3 text-xs text-gray-500">
                     Source: {interaction.source}

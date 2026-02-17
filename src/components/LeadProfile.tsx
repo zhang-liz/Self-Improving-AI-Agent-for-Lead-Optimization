@@ -91,13 +91,18 @@ export default function LeadProfile({ lead, onBack, suggestion }: LeadProfilePro
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStageColor(lead.stage)}`}>
                   {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
                 </span>
                 <span className="px-3 py-1 bg-gray-700 text-gray-300 rounded-full text-sm">
                   {lead.source}
                 </span>
+                {lead.intentSummary && (
+                  <span className="px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full text-sm border border-blue-700/50" title="Buyer intent signals">
+                    {lead.intentSummary}
+                  </span>
+                )}
                 {lead.hubspotId && (
                   <button className="flex items-center gap-1 px-3 py-1 bg-orange-600 text-orange-200 rounded-full text-sm hover:bg-orange-500 transition-colors">
                     <ExternalLink className="w-3 h-3" />
