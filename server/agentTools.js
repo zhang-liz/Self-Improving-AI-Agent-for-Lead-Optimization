@@ -1,10 +1,11 @@
 /**
- * Agent with tool use: get_lead_details(leadId), get_recent_interactions(leadId, limit).
- * Recommendations are grounded in real lead and interaction data.
+ * Agent with tool use: get_lead_details(leadId), get_recent_interactions(leadId, limit), get_intent_signals(leadId).
+ * Recommendations are grounded in real lead and interaction data, including buyer intent.
  */
 
 import OpenAI from 'openai';
 import { getConfig } from './agentConfig.js';
+import { aggregateLeadIntent, extractIntent } from './intentDetection.js';
 
 const TOOLS = [
   {
@@ -35,6 +36,20 @@ const TOOLS = [
         required: ['leadId']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_intent_signals',
+      description: 'Get buyer intent signals for a lead (demo request, pricing interest, trial signup, etc.). High-strength signals indicate strong buying interest.',
+      parameters: {
+        type: 'object',
+        properties: {
+          leadId: { type: 'string', description: 'The lead ID' }
+        },
+        required: ['leadId']
+      }
+    }
   }
 ];
 
@@ -53,6 +68,8 @@ function buildToolImplementations(leads, interactions) {
     get_lead_details(leadId) {
       const lead = leadById.get(leadId);
       if (!lead) return { error: 'Lead not found', leadId };
+      const interactions = interactionsByLead.get(leadId) || [];
+      const intent = aggregateLeadIntent(interactions);
       return {
         id: lead.id,
         name: lead.name,
@@ -65,21 +82,33 @@ function buildToolImplementations(leads, interactions) {
         stage: lead.stage,
         source: lead.source,
         lastInteraction: lead.lastInteraction,
-        totalInteractions: lead.totalInteractions
+        totalInteractions: lead.totalInteractions,
+        intentSignals: intent.signals,
+        intentSummary: intent.summary,
+        topIntent: intent.topIntent
       };
     },
     get_recent_interactions(leadId, limit = 10) {
       const list = interactionsByLead.get(leadId) || [];
-      const recent = list.slice(0, limit).map(i => ({
-        type: i.type,
-        content: i.content?.slice(0, 500),
-        sentiment: i.sentiment,
-        sentimentScore: i.sentimentScore,
-        timestamp: i.timestamp,
-        source: i.source,
-        subject: i.metadata?.subject
-      }));
+      const recent = list.slice(0, limit).map(i => {
+        const intentSignals = extractIntent(i);
+        return {
+          type: i.type,
+          content: i.content?.slice(0, 500),
+          sentiment: i.sentiment,
+          sentimentScore: i.sentimentScore,
+          timestamp: i.timestamp,
+          source: i.source,
+          subject: i.metadata?.subject,
+          intentSignals
+        };
+      });
       return { leadId, count: recent.length, interactions: recent };
+    },
+    get_intent_signals(leadId) {
+      const list = interactionsByLead.get(leadId) || [];
+      const intent = aggregateLeadIntent(list);
+      return { leadId, ...intent };
     }
   };
 }
@@ -125,11 +154,11 @@ export async function runRecommendWithTools(leads, interactions, teamMetrics) {
 
   const userMessage = {
     role: 'user',
-    content: `You are given a list of ${leads.length} leads. Use the tools get_lead_details(leadId) and get_recent_interactions(leadId) to inspect the leads you care about, then recommend the top up to 10 leads to contact and a specific action and reason for each. Base your recommendations on the actual data (scores, stage, recent interaction content and sentiment), not just the summary. Team context: ${JSON.stringify(teamMetrics || {})}. Lead summary: ${JSON.stringify(leadSummary)}. Respond with a single JSON object: { "prioritizedLeadIds": ["id1", "id2", ...], "suggestions": [ { "leadId": "id1", "action": "...", "reason": "..." }, ... ], "summary": "Brief sentence." }`
+    content: `You are given a list of ${leads.length} leads. Use the tools get_lead_details(leadId), get_recent_interactions(leadId), and get_intent_signals(leadId) to inspect the leads. Consider buyer intent signals (demo request, pricing interest, trial signup = high intent; pricing_view, case_study = medium intent) when prioritizing. Base recommendations on scores, stage, interaction content, sentiment, and intent. Team context: ${JSON.stringify(teamMetrics || {})}. Lead summary: ${JSON.stringify(leadSummary)}. Respond with a single JSON object: { "prioritizedLeadIds": ["id1", "id2", ...], "suggestions": [ { "leadId": "id1", "action": "...", "reason": "..." }, ... ], "summary": "Brief sentence." }`
   };
 
   const messages = [
-    { role: 'system', content: config.systemPrompt + ' You have access to get_lead_details(leadId) and get_recent_interactions(leadId). Call these tools to ground your recommendations in real data. End by returning the JSON object only.' },
+    { role: 'system', content: config.systemPrompt + ' You have access to get_lead_details(leadId), get_recent_interactions(leadId), and get_intent_signals(leadId). Use intent signals to prioritize leads with strong buying interest. End by returning the JSON object only.' },
     userMessage
   ];
 
@@ -161,6 +190,8 @@ export async function runRecommendWithTools(leads, interactions, teamMetrics) {
           result = toolsImpl.get_lead_details(args.leadId);
         } else if (name === 'get_recent_interactions') {
           result = toolsImpl.get_recent_interactions(args.leadId, args.limit);
+        } else if (name === 'get_intent_signals') {
+          result = toolsImpl.get_intent_signals(args.leadId);
         } else {
           result = { error: 'Unknown tool', name };
         }
