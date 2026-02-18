@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import Analytics from './components/Analytics';
 import Settings from './components/Settings';
 import LeadProfile from './components/LeadProfile';
+import { ConfigProvider } from './contexts/ConfigContext';
 import type { Lead, RecommendationSuggestion } from './types';
 
 function App() {
@@ -45,13 +46,15 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <Navbar activeView={activeView} onViewChange={setActiveView} />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderMainContent()}
-      </main>
-    </div>
+    <ConfigProvider>
+      <div className="min-h-screen bg-gray-900">
+        <Navbar activeView={activeView} onViewChange={setActiveView} />
+        
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {renderMainContent()}
+        </main>
+      </div>
+    </ConfigProvider>
   );
 }
 
