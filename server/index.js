@@ -32,9 +32,28 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/config', (_req, res) => {
   try {
     const config = getConfig();
-    res.json({ scoringWeights: config.scoringWeights });
+    res.json({
+      scoringWeights: config.scoringWeights,
+      attributionMode: config.attributionMode ?? 'time_decay',
+      timeDecayLambda: config.timeDecayLambda ?? 0.1
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to get config' });
+  }
+});
+
+app.patch('/api/config', (req, res) => {
+  try {
+    const patch = req.body || {};
+    const updated = applyPatch(patch);
+    res.json({
+      scoringWeights: updated.scoringWeights,
+      attributionMode: updated.attributionMode,
+      timeDecayLambda: updated.timeDecayLambda
+    });
+  } catch (err) {
+    console.error('Config patch error:', err);
+    res.status(500).json({ error: 'Failed to update config' });
   }
 });
 
