@@ -1,5 +1,5 @@
 import type { Lead, Interaction, ScoreHistory, TeamMetrics } from '../types';
-import { calculateEngagementScore, getScoreTrend } from '../utils/sentimentAnalysis';
+import { calculateEngagementScore, getScoreTrend, type AttributionOptions } from '../utils/sentimentAnalysis';
 import { extractIntent } from '../utils/intentDetection';
 
 function enrichWithIntent(i: Omit<Interaction, 'intentSignals'>): Interaction {
@@ -88,7 +88,7 @@ function generateMockLeads(): Lead[] {
       content: int.content,
       timestamp: int.timestamp,
       type: int.type
-    })));
+    })), { attributionMode: 'time_decay', timeDecayLambda: 0.1 });
     const previousScore = currentScore + (Math.random() - 0.5) * 20;
 
     // Aggregate intent signals from interactions
@@ -154,6 +154,27 @@ function generateScoreHistory(_leadId: string): ScoreHistory[] {
 export const mockLeads = generateMockLeads();
 
 export const mockInteractions = sampleInteractions;
+
+/** Recalculate engagement scores for leads using the given attribution mode */
+export function applyAttributionToLeads(
+  leads: Lead[],
+  interactions: Interaction[],
+  options: AttributionOptions
+): Lead[] {
+  return leads.map(lead => {
+    const leadInteractions = interactions.filter(int => int.leadId === lead.id);
+    const currentScore = calculateEngagementScore(
+      leadInteractions.map(int => ({ content: int.content, timestamp: int.timestamp, type: int.type })),
+      options
+    );
+    const previousScore = lead.previousScore ?? currentScore;
+    return {
+      ...lead,
+      engagementScore: Math.round(currentScore),
+      trend: getScoreTrend(currentScore, previousScore)
+    };
+  });
+}
 
 export const mockTeamMetrics: TeamMetrics = {
   totalLeads: mockLeads.length,
