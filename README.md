@@ -31,6 +31,7 @@ It works with mock data out of the box. The scoring logic is designed so you can
 | **Settings** | Backend status, agent improvement trigger, score thresholds, integrations. |
 | **Sentiment engine** | Keyword-based or LLM-based sentiment (aspect-based: product, price, urgency); set `SENTIMENT_PROVIDER=llm` with `OPENAI_API_KEY`. |
 | **Buyer intent** | Detects hand-raise (demo, trial, quote) and subtle signals (pricing, case study); surfaces in lead profile and agent recommendations. |
+| **Multi-touch attribution** | First touch, last touch, linear, or time-decay modes for aggregating interaction contributions into lead scores. |
 | **AI recommendations** | Backend agent returns prioritized leads and suggested actions; cache by lead-set hash with short TTL (5–15 min); thumbs up/down feedback. |
 | **Caching** | Sentiment cached by content hash; recommendations cached by lead-set hash with configurable TTL to reduce cost and latency. |
 | **Self-improving agent** | Feedback store, config versioning, optional “Run agent improvement” to refine scoring from feedback. |
