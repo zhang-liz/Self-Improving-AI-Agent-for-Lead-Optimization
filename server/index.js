@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { analyzeSentiment as keywordSentiment } from './sentimentKeyword.js';
 import { analyzeSentimentLLM } from './sentimentLLM.js';
 import { getConfig, getConfigHistory, applyPatch, rollback } from './agentConfig.js';
+import { computeLearnedWeights, mergeWeights } from './feedbackLearning.js';
 import { addFeedback, getRecentFeedback } from './feedbackStore.js';
 import { getCached, setCached } from './recommendCache.js';
 import { runRecommendWithTools } from './agentTools.js';
@@ -34,6 +35,8 @@ app.get('/api/config', (_req, res) => {
     const config = getConfig();
     res.json({
       scoringWeights: config.scoringWeights,
+      stageWeights: config.stageWeights ?? {},
+      sourceWeights: config.sourceWeights ?? {},
       attributionMode: config.attributionMode ?? 'time_decay',
       timeDecayLambda: config.timeDecayLambda ?? 0.1
     });
@@ -48,6 +51,8 @@ app.patch('/api/config', (req, res) => {
     const updated = applyPatch(patch);
     res.json({
       scoringWeights: updated.scoringWeights,
+      stageWeights: updated.stageWeights ?? {},
+      sourceWeights: updated.sourceWeights ?? {},
       attributionMode: updated.attributionMode,
       timeDecayLambda: updated.timeDecayLambda
     });
@@ -86,10 +91,18 @@ app.post('/api/sentiment', async (req, res) => {
   }
 });
 
+function getEffectiveScore(lead, config) {
+  const base = lead.engagementScore ?? lead.vibeScore ?? 50;
+  const stageW = (config.stageWeights || {})[lead.stage] ?? 1;
+  const sourceW = (config.sourceWeights || {})[lead.source] ?? 1;
+  return base * stageW * sourceW;
+}
+
 function buildRecommendations(leads, teamMetrics) {
+  const config = getConfig();
   const sorted = [...leads].sort((a, b) => {
-    const scoreA = a.engagementScore ?? a.vibeScore ?? 0;
-    const scoreB = b.engagementScore ?? b.vibeScore ?? 0;
+    const scoreA = getEffectiveScore(a, config);
+    const scoreB = getEffectiveScore(b, config);
     if (scoreB !== scoreA) return scoreB - scoreA;
     return new Date(b.lastInteraction) - new Date(a.lastInteraction);
   });
@@ -138,7 +151,7 @@ app.post('/api/agent/recommend', async (req, res) => {
 
 app.post('/api/agent/feedback', (req, res) => {
   try {
-    const { leadId, outcomeType, recommendationId, metadata } = req.body || {};
+    const { leadId, outcomeType, recommendationId, metadata = {} } = req.body || {};
     if (!leadId) return res.status(400).json({ error: 'Missing leadId' });
     const record = addFeedback({ leadId, outcomeType, recommendationId, metadata });
     res.status(201).json(record);
@@ -152,14 +165,31 @@ app.post('/api/agent/improve', (req, res) => {
   try {
     const recent = getRecentFeedback(7);
     const config = getConfig();
-    if (recent.length === 0) {
+    const helpfulOrNot = recent.filter(f => f.outcomeType === 'helpful' || f.outcomeType === 'not_helpful');
+    if (helpfulOrNot.length === 0) {
       return res.json({ success: true, message: 'No recent feedback to improve from' });
     }
-    const patch = {
-      scoringWeights: config.scoringWeights
-    };
-    applyPatch(patch);
-    res.json({ success: true, message: 'Config updated', config: getConfig() });
+
+    const learned = computeLearnedWeights(helpfulOrNot);
+    const { stageWeights, sourceWeights } = mergeWeights(
+      config.stageWeights,
+      config.sourceWeights,
+      learned
+    );
+
+    const patch = {};
+    if (stageWeights && Object.keys(stageWeights).length > 0) patch.stageWeights = stageWeights;
+    if (sourceWeights && Object.keys(sourceWeights).length > 0) patch.sourceWeights = sourceWeights;
+
+    if (Object.keys(patch).length > 0) {
+      applyPatch(patch);
+    }
+
+    res.json({
+      success: true,
+      message: `Updated from ${helpfulOrNot.length} feedback entries`,
+      config: getConfig()
+    });
   } catch (err) {
     console.error('Improve error:', err);
     res.status(500).json({ error: 'Improve failed' });
