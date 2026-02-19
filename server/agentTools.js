@@ -152,13 +152,18 @@ export async function runRecommendWithTools(leads, interactions, teamMetrics) {
     trend: l.trend
   }));
 
+  const learnedHint = (config.stageWeights && Object.keys(config.stageWeights).length > 0) ||
+    (config.sourceWeights && Object.keys(config.sourceWeights).length > 0)
+    ? ` Learned from feedback: stageWeights=${JSON.stringify(config.stageWeights || {})}, sourceWeights=${JSON.stringify(config.sourceWeights || {})}. Favor stages/sources with weight > 1.`
+    : '';
+
   const userMessage = {
     role: 'user',
-    content: `You are given a list of ${leads.length} leads. Use the tools get_lead_details(leadId), get_recent_interactions(leadId), and get_intent_signals(leadId) to inspect the leads. Consider buyer intent signals (demo request, pricing interest, trial signup = high intent; pricing_view, case_study = medium intent) when prioritizing. Base recommendations on scores, stage, interaction content, sentiment, and intent. Team context: ${JSON.stringify(teamMetrics || {})}. Lead summary: ${JSON.stringify(leadSummary)}. Respond with a single JSON object: { "prioritizedLeadIds": ["id1", "id2", ...], "suggestions": [ { "leadId": "id1", "action": "...", "reason": "..." }, ... ], "summary": "Brief sentence." }`
+    content: `You are given a list of ${leads.length} leads. Use the tools get_lead_details(leadId), get_recent_interactions(leadId), and get_intent_signals(leadId) to inspect the leads. Consider buyer intent signals (demo request, pricing interest, trial signup = high intent; pricing_view, case_study = medium intent) when prioritizing. Base recommendations on scores, stage, interaction content, sentiment, and intent.${learnedHint} Team context: ${JSON.stringify(teamMetrics || {})}. Lead summary: ${JSON.stringify(leadSummary)}. Respond with a single JSON object: { "prioritizedLeadIds": ["id1", "id2", ...], "suggestions": [ { "leadId": "id1", "action": "...", "reason": "..." }, ... ], "summary": "Brief sentence." }`
   };
 
   const messages = [
-    { role: 'system', content: config.systemPrompt + ' You have access to get_lead_details(leadId), get_recent_interactions(leadId), and get_intent_signals(leadId). Use intent signals to prioritize leads with strong buying interest. End by returning the JSON object only.' },
+    { role: 'system', content: config.systemPrompt + ' You have access to get_lead_details(leadId), get_recent_interactions(leadId), and get_intent_signals(leadId). Use intent signals to prioritize leads with strong buying interest. If stageWeights/sourceWeights are provided from feedback, factor them into prioritization. End by returning the JSON object only.' },
     userMessage
   ];
 
