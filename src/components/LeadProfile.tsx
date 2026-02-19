@@ -138,7 +138,7 @@ export default function LeadProfile({ lead, onBack, suggestion }: LeadProfilePro
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={() => recordFeedback(lead.id, 'helpful', undefined)}
+                onClick={() => recordFeedback(lead.id, 'helpful', undefined, { stage: lead.stage, source: lead.source })}
                 className="p-2 rounded text-gray-400 hover:text-green-400 hover:bg-gray-700"
                 title="Helpful"
               >
@@ -146,7 +146,7 @@ export default function LeadProfile({ lead, onBack, suggestion }: LeadProfilePro
               </button>
               <button
                 type="button"
-                onClick={() => recordFeedback(lead.id, 'not_helpful', undefined)}
+                onClick={() => recordFeedback(lead.id, 'not_helpful', undefined, { stage: lead.stage, source: lead.source })}
                 className="p-2 rounded text-gray-400 hover:text-red-400 hover:bg-gray-700"
                 title="Not helpful"
               >

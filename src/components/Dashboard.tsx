@@ -45,7 +45,9 @@ export default function Dashboard({ onLeadSelect }: DashboardProps) {
 
   const handleFeedback = async (e: React.MouseEvent, leadId: string, helpful: boolean) => {
     e.stopPropagation();
-    await recordFeedback(leadId, helpful ? 'helpful' : 'not_helpful');
+    const lead = leads.find(l => l.id === leadId);
+    const metadata = lead ? { stage: lead.stage, source: lead.source } : undefined;
+    await recordFeedback(leadId, helpful ? 'helpful' : 'not_helpful', undefined, metadata);
   };
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
