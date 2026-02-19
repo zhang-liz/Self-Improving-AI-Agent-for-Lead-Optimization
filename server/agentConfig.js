@@ -11,6 +11,8 @@ const defaultConfig = {
     supportWeight: 0.8,
     engagementBonusCap: 20
   },
+  stageWeights: {},
+  sourceWeights: {},
   attributionMode: 'time_decay',
   timeDecayLambda: 0.1,
   systemPrompt: 'You are a lead prioritization assistant. Given a list of leads with scores and context, suggest the top leads to contact and a brief recommended action for each.',
@@ -47,6 +49,12 @@ export function applyPatch(patch) {
   }
   if (typeof patch.timeDecayLambda === 'number' && patch.timeDecayLambda >= 0 && patch.timeDecayLambda <= 1) {
     next.timeDecayLambda = patch.timeDecayLambda;
+  }
+  if (patch.stageWeights && typeof patch.stageWeights === 'object') {
+    next.stageWeights = { ...(current.stageWeights || {}), ...patch.stageWeights };
+  }
+  if (patch.sourceWeights && typeof patch.sourceWeights === 'object') {
+    next.sourceWeights = { ...(current.sourceWeights || {}), ...patch.sourceWeights };
   }
 
   current = next;
