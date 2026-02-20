@@ -68,13 +68,18 @@ export default function LeadCard({ lead, onClick }: LeadCardProps) {
           </div>
         </div>
 
-        <ScoreGauge 
-          score={lead.engagementScore} 
-          previousScore={lead.previousScore}
-          trend={lead.trend}
-          size="sm"
-          animated={true}
-        />
+        <div className="flex flex-col items-end gap-1">
+          <ScoreGauge 
+            score={lead.engagementScore} 
+            previousScore={lead.previousScore}
+            trend={lead.trend}
+            size="sm"
+            animated={true}
+          />
+          {lead.mlScore != null && (
+            <span className="text-xs text-purple-400" title="ML conversion score">ML {lead.mlScore}</span>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between text-sm text-gray-400">
